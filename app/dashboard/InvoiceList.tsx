@@ -24,8 +24,10 @@ export default function SheetViewer() {
   });
 
   const [subTotal, setSubTotal] = useState(0);
-  const [tax, setTax] = useState(0);
   const [total, setTotal] = useState(0);
+
+  // Tax is always 0
+  const tax = 0;
 
   const [payByDate, setPayByDate] = useState("2026-03-01");
   const [paymentMethodDetails, setPaymentMethodDetails] = useState("");
@@ -84,11 +86,9 @@ export default function SheetViewer() {
       if (!isNaN(num)) subtotalCalc += num;
     });
 
-    const taxCalc = (subtotalCalc * (parseFloat(tax) || 0)) / 100;
-    const totalCalc = subtotalCalc + taxCalc;
-
+    // Total = subtotal (tax is always 0)
     setSubTotal(subtotalCalc);
-    setTotal(totalCalc);
+    setTotal(subtotalCalc);
   };
 
   const downloadPDF = () => {
@@ -135,7 +135,7 @@ export default function SheetViewer() {
     // Subtotal / Tax / Total
     doc.setFontSize(12);
     doc.text(`Subtotal: $${subTotal.toFixed(2)}`, pageWidth - margin - 50, currentY + 10);
-    doc.text(`Tax (${tax}%): $${((subTotal * tax) / 100).toFixed(2)}`, pageWidth - margin - 50, currentY + 18);
+    doc.text(`Tax (${tax}%): $0.00`, pageWidth - margin - 50, currentY + 18); // Always 0
     doc.setFontSize(14);
     doc.setTextColor(22, 163, 74);
     doc.text(`Total: $${total.toFixed(2)}`, pageWidth - margin - 50, currentY + 28);
@@ -202,75 +202,105 @@ export default function SheetViewer() {
       </div>
 
       {/* Invoice */}
-      {rows.length > 0 && (
-        <div style={{ backgroundColor: "#ffffff", border: "2px solid #4ade80" }} className="rounded-lg p-10 w-full max-w-4xl">
-          {/* From / To */}
-          <div className="mb-6 flex justify-between gap-4">
-            <div className="w-1/2 text-gray-700">
-              <h3 className="font-semibold text-lg mb-2">From:</h3>
-              {isEditing ? (
-                <>
-                  <input className="w-full mb-1 p-1 border rounded" value={fromData.company} onChange={(e) => setFromData({ ...fromData, company: e.target.value })} />
-                  <input className="w-full mb-1 p-1 border rounded" value={fromData.address} onChange={(e) => setFromData({ ...fromData, address: e.target.value })} />
-                  <input className="w-full mb-1 p-1 border rounded" value={fromData.email} onChange={(e) => setFromData({ ...fromData, email: e.target.value })} />
-                </>
-              ) : (
-                <>
-                  <p>{fromData.company}</p>
-                  <p>{fromData.address}</p>
-                  <p>{fromData.email}</p>
-                </>
-              )}
-            </div>
+{rows.length > 0 && (
+  <div style={{ backgroundColor: "#ffffff", border: "2px solid #4ade80" }} className="rounded-lg p-10 w-full max-w-4xl">
+    
+    {/* INVOICE Heading */}
+    <div className="text-center mb-6">
+      <h1 style={{ color: "#15803d" }} className="text-3xl font-bold tracking-wide">
+        INVOICE
+      </h1>
+    </div>
 
-            <div className="w-1/2 text-gray-700 text-right">
-              <h3 className="font-semibold text-lg mb-2">To:</h3>
-              {isEditing ? (
-                <>
-                  <input className="w-full mb-1 p-1 border rounded text-right" value={toData.name} onChange={(e) => setToData({ ...toData, name: e.target.value })} />
-                  <input className="w-full mb-1 p-1 border rounded text-right" value={toData.address} onChange={(e) => setToData({ ...toData, address: e.target.value })} />
-                  <input className="w-full mb-1 p-1 border rounded text-right" value={toData.email} onChange={(e) => setToData({ ...toData, email: e.target.value })} />
-                  <input className="w-full mb-1 p-1 border rounded text-right" value={toData.date} onChange={(e) => setToData({ ...toData, date: e.target.value })} />
-                </>
-              ) : (
-                <>
-                  <p>{toData.name}</p>
-                  <p>{toData.address}</p>
-                  <p>{toData.email}</p>
-                  <p>Date: {toData.date}</p>
-                </>
-              )}
-            </div>
-          </div>
+    {/* From / To */}
+    <div className="mb-6 flex justify-between gap-4">
+      <div className="w-1/2 text-gray-700">
+        <h3 className="font-semibold text-lg mb-2">From:</h3>
+        {isEditing ? (
+          <>
+            <input className="w-full mb-1 p-1 border rounded" value={fromData.company} onChange={(e) => setFromData({ ...fromData, company: e.target.value })} />
+            <input className="w-full mb-1 p-1 border rounded" value={fromData.address} onChange={(e) => setFromData({ ...fromData, address: e.target.value })} />
+            <input className="w-full mb-1 p-1 border rounded" value={fromData.email} onChange={(e) => setFromData({ ...fromData, email: e.target.value })} />
+          </>
+        ) : (
+          <>
+            <p>{fromData.company}</p>
+            <p>{fromData.address}</p>
+            <p>{fromData.email}</p>
+          </>
+        )}
+      </div>
 
-          {/* Table */}
-          <div style={{ border: "2px solid #4ade80" }} className="overflow-x-auto rounded-lg shadow-sm mb-6">
-            <table className="min-w-full text-sm text-left border-collapse">
-              <thead style={{ backgroundColor: "#dcfce7", color: "#15803d" }} className="uppercase text-xs tracking-wider">
-                <tr>
-                  {Object.keys(rows[0]).map((header) => (
-                    <th key={header} style={{ border: "1px solid #86efac", padding: "12px" }}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i} style={{ backgroundColor: "#f0fdf4" }}>
-                    {Object.entries(row).map(([key, value], j) => (
-                      <td key={j} style={{ border: "1px solid #86efac", padding: "12px", color: "#15803d" }}>
-                        {isEditing ? (
-                          <input className="w-full p-1 border rounded" value={value} onChange={(e) => handleCellChange(i, key, e.target.value)} />
-                        ) : (
-                          value
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="w-1/2 text-gray-700 text-right">
+        <h3 className="font-semibold text-lg mb-2">To:</h3>
+        {isEditing ? (
+          <>
+            <input className="w-full mb-1 p-1 border rounded text-right" value={toData.name} onChange={(e) => setToData({ ...toData, name: e.target.value })} />
+            <input className="w-full mb-1 p-1 border rounded text-right" value={toData.address} onChange={(e) => setToData({ ...toData, address: e.target.value })} />
+            <input className="w-full mb-1 p-1 border rounded text-right" value={toData.email} onChange={(e) => setToData({ ...toData, email: e.target.value })} />
+            <input className="w-full mb-1 p-1 border rounded text-right" value={toData.date} onChange={(e) => setToData({ ...toData, date: e.target.value })} />
+          </>
+        ) : (
+          <>
+            <p>{toData.name}</p>
+            <p>{toData.address}</p>
+            <p>{toData.email}</p>
+            <p>Date: {toData.date}</p>
+          </>
+        )}
+      </div>
+    </div>
 
+    {/* Table */}
+    <div style={{ border: "2px solid #4ade80" }} className="overflow-x-auto rounded-lg shadow-sm mb-6">
+      <table className="min-w-full text-sm text-left border-collapse">
+        <thead style={{ backgroundColor: "#dcfce7", color: "#15803d" }} className="uppercase text-xs tracking-wider">
+          <tr>
+            {Object.keys(rows[0]).map((header) => (
+              <th key={header} style={{ border: "1px solid #86efac", padding: "12px" }}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} style={{ backgroundColor: "#f0fdf4" }}>
+              {Object.entries(row).map(([key, value], j) => (
+                <td key={j} style={{ border: "1px solid #86efac", padding: "12px", color: "#15803d" }}>
+                  {isEditing ? (
+                    <input className="w-full p-1 border rounded" value={value} onChange={(e) => handleCellChange(i, key, e.target.value)} />
+                  ) : (
+                    value
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Subtotal / Tax / Total */}
+    <div className="flex justify-end gap-6 mb-6">
+      <div className="w-1/3 text-right space-y-2">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>${subTotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Tax (0%):</span>
+          <span>$0.00</span>
+        </div>
+        <div className="flex justify-between font-bold" style={{ color: "#15803d" }}>
+          <span>Total:</span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+        <button className="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition" onClick={handleAddAll}>
+          Add All
+        </button>
+      </div>
+    </div>
+
+    {/* Payment Section stays SAME */}
           {/* Subtotal / Tax / Total */}
           <div className="flex justify-end gap-6 mb-6">
             <div className="w-1/3 text-right space-y-2">
@@ -279,8 +309,8 @@ export default function SheetViewer() {
                 <span>${subTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax (%):</span>
-                <input type="number" className="w-16 border p-1 rounded text-right" value={tax} onChange={(e) => setTax(parseFloat(e.target.value) || 0)} />
+                <span>Tax (0%):</span>
+                <span>$0.00</span>
               </div>
               <div className="flex justify-between font-bold" style={{ color: "#15803d" }}>
                 <span>Total:</span>
