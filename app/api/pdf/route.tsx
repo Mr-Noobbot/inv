@@ -46,7 +46,8 @@ export async function POST(request: Request) {
       </Document>
     );
 
-    const buffer = await pdf(doc).toBuffer();
+    const blob = await pdf(doc).toBlob();
+    const buffer = await blob.arrayBuffer();
 
     return new NextResponse(buffer, {
       status: 200,
