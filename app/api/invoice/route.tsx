@@ -35,9 +35,12 @@ export async function GET(request: Request) {
   const invoiceNo = url.searchParams.get("invoiceNo");
 
   const invoices = await fetchInvoices(sheetId);
-  const invoice = invoices.find(inv => inv["Invoice No"] === invoiceNo) || invoices[0];
+  const invoice = invoices.find((inv) => inv["Invoice No"] === invoiceNo) || invoices[0];
 
-  const buffer = await pdf(<InvoiceTemplate invoice={invoice} />).toBuffer();
+  // toBuffer() returns a ReadableStream in newer @react-pdf/renderer versions.
+  // toBlob() → arrayBuffer() gives us a proper BodyInit that NextResponse accepts.
+  const blob = await pdf(<InvoiceTemplate invoice={invoice} />).toBlob();
+  const buffer = await blob.arrayBuffer();
 
   return new NextResponse(buffer, {
     headers: {
